@@ -1,0 +1,7 @@
+{
+  "name": "OmniPDF - All-in-One PDF Editor & Toolkit",
+  "description": "Fast, private, client-side PDF editor and toolkit. Merge, split, delete pages, annotate, sign, fill forms, compress, convert, and protect PDFs without uploading to a server.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
