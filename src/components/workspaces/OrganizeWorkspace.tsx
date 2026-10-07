@@ -14,6 +14,8 @@ import {
   CheckCircle2,
   Loader2,
   FileText,
+  LayoutGrid,
+  ArrowLeftRight,
 } from 'lucide-react';
 import JSZip from 'jszip';
 import { PageItem, PdfFileItem, ToolId } from '../../types/pdf';
@@ -54,6 +56,10 @@ export const OrganizeWorkspace: React.FC<OrganizeWorkspaceProps> = ({
   // Split specific state:
   const [splitMode, setSplitMode] = useState<'all' | 'ranges' | 'extract'>('all');
   const [splitRangesInput, setSplitRangesInput] = useState('1-2, 3');
+
+  // Display grid columns & reading direction (RTL / LTR)
+  const [columnsPerRow, setColumnsPerRow] = useState<number | 'auto'>('auto');
+  const [isRtlLayout, setIsRtlLayout] = useState<boolean>(true); // Default to Right-to-Left (מימין לשמאל)
 
   // Load pages and generate thumbnails whenever initialFiles change
   useEffect(() => {
@@ -570,19 +576,88 @@ export const OrganizeWorkspace: React.FC<OrganizeWorkspaceProps> = ({
       ) : (
         /* Visual Page Grid */
         <div className="mt-6">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-xs text-neutral-500">
-              Drag thumbnails to reorder pages. Use page controls to rotate or delete individual pages.
-            </p>
+          {/* Grid Toolbar: Layout, Columns per row, and RTL/LTR Direction */}
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4 p-3 bg-white border border-neutral-200 rounded-xl">
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Columns Per Row Selector */}
+              <div className="flex items-center gap-1.5 text-xs">
+                <span className="font-semibold text-neutral-700 flex items-center gap-1">
+                  <LayoutGrid className="w-3.5 h-3.5 text-neutral-500" />
+                  <span>הצג דפים בשורה:</span>
+                </span>
+                <div className="flex items-center bg-neutral-100 p-0.5 rounded-lg">
+                  {[
+                    { id: 1, label: '1 (אחד אחד)', title: 'דף 1 בכל שורה' },
+                    { id: 2, label: '2 (שניים שניים)', title: '2 דפים בכל שורה' },
+                    { id: 3, label: '3 (שלוש שלוש)', title: '3 דפים בכל שורה' },
+                    { id: 4, label: '4', title: '4 דפים בכל שורה' },
+                    { id: 6, label: '6', title: '6 דפים בכל שורה' },
+                    { id: 'auto', label: 'אוטומטי', title: 'פריסה רספונסיבית' },
+                  ].map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => setColumnsPerRow(item.id as any)}
+                      title={item.title}
+                      className={`px-2.5 py-1 rounded-md font-medium text-xs transition-colors ${
+                        columnsPerRow === item.id
+                          ? 'bg-white text-neutral-900 shadow-xs font-semibold'
+                          : 'text-neutral-600 hover:text-neutral-900'
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Reading Direction Toggle (RTL / LTR) */}
+              <div className="flex items-center gap-1.5 text-xs">
+                <span className="font-semibold text-neutral-700">סדר קריאה:</span>
+                <button
+                  onClick={() => setIsRtlLayout(!isRtlLayout)}
+                  className={`px-3 py-1 rounded-lg border font-medium flex items-center gap-1.5 transition-colors ${
+                    isRtlLayout
+                      ? 'bg-neutral-900 text-white border-neutral-900'
+                      : 'bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-50'
+                  }`}
+                  title={isRtlLayout ? 'הצגה מימין לשמאל פעילה (RTL)' : 'הצגה משמאל לימין פעילה (LTR)'}
+                >
+                  <ArrowLeftRight className="w-3.5 h-3.5" />
+                  <span>{isRtlLayout ? 'מימין לשמאל (RTL)' : 'משמאל לימין (LTR)'}</span>
+                </button>
+              </div>
+            </div>
+
             {isLoadingThumbnails && (
               <div className="flex items-center gap-2 text-xs text-neutral-500">
                 <Loader2 className="w-3.5 h-3.5 animate-spin text-neutral-700" />
-                <span>Generating high-res previews...</span>
+                <span>טוען תצוגה מקדימה...</span>
               </div>
             )}
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5">
+          <p className="text-xs text-neutral-500 mb-3" dir={isRtlLayout ? 'rtl' : 'ltr'}>
+            {isRtlLayout
+              ? 'גרור תמונות ממוזערות כדי לשנות את סדר הדפים. הדפים מוצגים מימין לשמאל.'
+              : 'Drag thumbnails to reorder pages. Use page controls to rotate or delete individual pages.'}
+          </p>
+
+          <div
+            dir={isRtlLayout ? 'rtl' : 'ltr'}
+            className={
+              columnsPerRow === 1
+                ? 'grid grid-cols-1 max-w-xl mx-auto gap-6'
+                : columnsPerRow === 2
+                ? 'grid grid-cols-1 sm:grid-cols-2 max-w-3xl mx-auto gap-5'
+                : columnsPerRow === 3
+                ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 max-w-5xl mx-auto gap-5'
+                : columnsPerRow === 4
+                ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4'
+                : columnsPerRow === 6
+                ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3.5'
+                : 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5'
+            }
+          >
             {pages.map((page, index) => {
               const isSelected = selectedIds.has(page.id);
               const isDraggable = !page.isDeleted;
@@ -615,7 +690,7 @@ export const OrganizeWorkspace: React.FC<OrganizeWorkspaceProps> = ({
                         />
                       )}
                       <span className="font-semibold text-neutral-800">
-                        Page {index + 1}
+                        {isRtlLayout ? `דף ${index + 1}` : `Page ${index + 1}`}
                       </span>
                     </div>
 
@@ -627,7 +702,11 @@ export const OrganizeWorkspace: React.FC<OrganizeWorkspaceProps> = ({
                   </div>
 
                   {/* Thumbnail Preview with Rotation Transform */}
-                  <div className="relative aspect-[3/4] p-3 flex items-center justify-center bg-neutral-100/40 select-none">
+                  <div
+                    className={`relative p-3 flex items-center justify-center bg-neutral-100/40 select-none ${
+                      columnsPerRow === 1 ? 'aspect-[3/4] min-h-[380px]' : 'aspect-[3/4]'
+                    }`}
+                  >
                     {page.thumbnailUrl ? (
                       <img
                         src={page.thumbnailUrl}
@@ -650,7 +729,7 @@ export const OrganizeWorkspace: React.FC<OrganizeWorkspaceProps> = ({
                     {page.isDeleted && (
                       <div className="absolute inset-0 bg-rose-500/10 flex items-center justify-center">
                         <span className="px-2 py-1 bg-rose-600 text-white text-[11px] font-bold rounded shadow-sm">
-                          DELETED
+                          {isRtlLayout ? 'נמחק' : 'DELETED'}
                         </span>
                       </div>
                     )}
@@ -658,30 +737,52 @@ export const OrganizeWorkspace: React.FC<OrganizeWorkspaceProps> = ({
 
                   {/* Card Actions Footer */}
                   <div className="p-2 bg-white border-t border-neutral-100 flex items-center justify-between text-neutral-600">
-                    {/* Left/Right movement buttons for precision & mobile */}
-                    <div className="flex items-center gap-0.5">
-                      <button
-                        title="Move page left"
-                        disabled={index === 0 || page.isDeleted}
-                        onClick={() => handleMovePage(index, index - 1)}
-                        className="p-1 hover:bg-neutral-100 rounded disabled:opacity-30 disabled:hover:bg-transparent"
-                      >
-                        <ChevronLeft className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        title="Move page right"
-                        disabled={index === pages.length - 1 || page.isDeleted}
-                        onClick={() => handleMovePage(index, index + 1)}
-                        className="p-1 hover:bg-neutral-100 rounded disabled:opacity-30 disabled:hover:bg-transparent"
-                      >
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+                    {/* Left/Right movement buttons adjusted for visual direction */}
+                    {isRtlLayout ? (
+                      <div className="flex items-center gap-0.5" dir="ltr">
+                        {/* In RTL, clicking Right points to previous item in visual flow */}
+                        <button
+                          title="הזז ימינה (דף קודם)"
+                          disabled={index === 0 || page.isDeleted}
+                          onClick={() => handleMovePage(index, index - 1)}
+                          className="p-1 hover:bg-neutral-100 rounded disabled:opacity-30 disabled:hover:bg-transparent"
+                        >
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          title="הזז שמאלה (דף הבא)"
+                          disabled={index === pages.length - 1 || page.isDeleted}
+                          onClick={() => handleMovePage(index, index + 1)}
+                          className="p-1 hover:bg-neutral-100 rounded disabled:opacity-30 disabled:hover:bg-transparent"
+                        >
+                          <ChevronLeft className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-0.5">
+                        <button
+                          title="Move page left"
+                          disabled={index === 0 || page.isDeleted}
+                          onClick={() => handleMovePage(index, index - 1)}
+                          className="p-1 hover:bg-neutral-100 rounded disabled:opacity-30 disabled:hover:bg-transparent"
+                        >
+                          <ChevronLeft className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          title="Move page right"
+                          disabled={index === pages.length - 1 || page.isDeleted}
+                          onClick={() => handleMovePage(index, index + 1)}
+                          className="p-1 hover:bg-neutral-100 rounded disabled:opacity-30 disabled:hover:bg-transparent"
+                        >
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
 
                     <div className="flex items-center gap-1">
                       {/* Rotate single page */}
                       <button
-                        title="Rotate 90° clockwise"
+                        title={isRtlLayout ? 'סובב 90° עם כיוון השעון' : 'Rotate 90° clockwise'}
                         disabled={page.isDeleted}
                         onClick={() => handleRotatePage(index)}
                         className="p-1.5 hover:bg-neutral-100 rounded hover:text-neutral-900 transition-colors disabled:opacity-30"
@@ -692,7 +793,7 @@ export const OrganizeWorkspace: React.FC<OrganizeWorkspaceProps> = ({
                       {/* Duplicate page (for reorder tool) */}
                       {toolId === 'reorder' && (
                         <button
-                          title="Duplicate this page"
+                          title={isRtlLayout ? 'שכפל דף זה' : 'Duplicate this page'}
                           disabled={page.isDeleted}
                           onClick={() => handleDuplicatePage(index)}
                           className="p-1.5 hover:bg-neutral-100 rounded hover:text-neutral-900 transition-colors disabled:opacity-30"
@@ -703,7 +804,11 @@ export const OrganizeWorkspace: React.FC<OrganizeWorkspaceProps> = ({
 
                       {/* Delete / Undo toggle */}
                       <button
-                        title={page.isDeleted ? 'Undo deletion' : 'Delete page'}
+                        title={
+                          page.isDeleted
+                            ? isRtlLayout ? 'בטל מחיקה' : 'Undo deletion'
+                            : isRtlLayout ? 'מחק דף' : 'Delete page'
+                        }
                         onClick={() => handleToggleDelete(index)}
                         className={`p-1.5 rounded transition-colors ${
                           page.isDeleted
